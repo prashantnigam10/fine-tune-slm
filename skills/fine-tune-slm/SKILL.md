@@ -1,6 +1,6 @@
 ---
 name: fine-tune-slm
-description: Fine-tune a small language model (SLM) locally on Apple Silicon using MLX + LoRA, designed for people who are NOT AI engineers. Handles everything end-to-end - hardware check, model selection, data preparation, synthetic data generation, training, evaluation, Ollama export, and a plain-English HTML report. Use this skill whenever the user wants to fine-tune, train, customize, specialize, or "teach" a local/small/open-source language model on their own data (classification, extraction, style, Q&A), asks which local model they can train on their Mac, or wants to create a custom local AI model - even if they don't say "fine-tune" explicitly.
+description: Fine-tune a small language model (SLM) locally on Apple Silicon using MLX + LoRA, designed for people who are NOT AI engineers. Handles everything end-to-end - hardware check, model selection, data preparation, synthetic data generation, training, evaluation, Ollama export, and a plain-English HTML dashboard of the whole run. Use this skill whenever the user wants to fine-tune, train, customize, specialize, or "teach" a local/small/open-source language model on their own data (classification, extraction, style, Q&A), asks which local model they can train on their Mac, or wants to create a custom local AI model - even if they don't say "fine-tune" explicitly.
 ---
 
 # Fine-Tune a Small Language Model Locally (Apple Silicon)
@@ -8,135 +8,111 @@ description: Fine-tune a small language model (SLM) locally on Apple Silicon usi
 Guide a user with general tech literacy — but **no AI engineering background** — through fine-tuning a small language model on their own Mac. You (Claude) are the AI engineer; the user only answers plain-English questions about their problem. Never ask the user to pick hyperparameters, LoRA ranks, or learning rates. Translate their answers into config yourself.
 
 **Golden rules for this skill:**
-- Talk to the user in plain language. Say "teaching the model" not "gradient updates"; "practice examples" not "training samples" is fine too. Briefly define any term you must use.
+- Talk to the user in plain language. Briefly define any term you must use.
 - Everything runs locally. Never upload their data anywhere.
-- Fail gracefully: check hardware first, and if something can't work, say why and what would work instead.
-- Keep all artifacts inside a project folder the user can see and delete.
+- Fail gracefully: check hardware first; if something can't work, say why and what would work instead.
+- **The dashboard is the single artifact.** One HTML file per run (`report/dashboard.html`, managed by `scripts/dashboard.py`) collects everything: plans, data samples, model options, results, files, and an activity log. Add to it at every step; tell the user to keep it open and refresh.
+- **Anything the user must review goes in the dashboard first, then ask.** Never put review content (sample data, converted examples, model tables) inside AskUserQuestion options or previews — users often can't see those. Sequence: add dashboard section → open/point to it → ask the plain question.
+- **Log as you go.** Every install, download, file created, or long command runs through `dashboard.py log ...` the moment it happens — the user may have auto-approve on and deserves a full record of what touched their machine. `train.py` logs itself; everything else is your habit.
 
-## Workflow overview
-
-1. Preflight (hardware + software check) — `scripts/preflight.py`
-2. Interview the user (plain-English questions)
-3. Data: validate user's data, or synthesize/download a dataset
-4. Recommend a model from the catalog based on their hardware
-5. Show the plan, get one confirmation
-6. Baseline evaluation (measure the un-tuned model)
-7. Train (LoRA via mlx_lm)
-8. Final evaluation + compare to baseline and to the user's goal
-9. If goal missed: diagnose; if data quantity is the cause, offer synthetic augmentation and retrain
-10. Export to Ollama
-11. Generate the plain-English HTML report — `scripts/report.py`
-
-## Step 1: Preflight
-
-Run `scripts/preflight.py` from this skill's directory. It checks: Apple Silicon chip, RAM, free disk (needs ~15GB), Python 3.9+, and whether `mlx`/`mlx-lm` are installed.
-
-- If **not Apple Silicon**: stop gracefully. Explain the skill currently supports Apple Silicon Macs only (it uses Apple's MLX framework), and that cloud or PyTorch-based alternatives exist but aren't automated here. Do not attempt workarounds.
-- If deps are missing: create a virtual environment in the project folder and `pip3 install mlx mlx-lm` (plus `huggingface_hub`). Use `python3`/`pip3`.
-- Note the RAM figure — it drives model selection.
-
-Create a project folder (ask the user where, default `./slm-finetune-<task-name>/`) with subfolders: `data/`, `adapters/`, `results/baseline/`, `results/final/`, `report/`.
-
-## Step 2: Interview the user
-
-Ask only what you need, in plain English (use AskUserQuestion if available):
-
-1. **What should the model learn to do?** (e.g., "sort my emails into urgent/normal/low")
-2. **Do you have example data?** If yes, where is the file? If no → Step 3b.
-3. **What does a perfect answer look like?** (defines the output: a label, a short phrase, a paragraph)
-4. **How good does it need to be?** (e.g., "right 9 times out of 10" → 90% target)
-
-From these, infer the task type (classification / extraction / generation / Q&A) and design the prompt template yourself. See `references/data-formats.md` for templates per task type.
-
-## Step 3a: User has data
-
-Run `scripts/prepare_data.py` to convert their file (CSV, JSON, JSONL, or plain text) into MLX training format and split it into train/valid/test sets. Inspect their file first to map columns to input→output; confirm your mapping with the user by showing 2 example conversions.
-
-Data quantity guidance (warn, don't block):
-- Classification: 50+ examples recommended; below 50, offer synthetic augmentation now (Step 3b) or proceed with a caveat.
-- Generation/style/Q&A: 200+ recommended.
-- Also check label balance for classification; if skewed, offer to synthesize the minority class.
-
-## Step 3b: User has no data (or not enough)
-
-Two options — present both, let the user choose:
-
-1. **Synthetic generation (you write it):** Generate diverse, realistic examples yourself following `references/synthetic-data.md`. Show the user ~5 samples for approval before generating the full set. Save to `data/synthetic_data.jsonl` in prompt/completion format, then run `prepare_data.py` on it.
-2. **Download from Hugging Face:** Search for a reputable public dataset matching the task (prefer high-download, well-documented datasets). Confirm the specific dataset with the user before downloading, then map it into training format with `prepare_data.py`.
-
-## Step 4: Choose the model
-
-Read `references/models.md` (the vetted catalog with RAM requirements). Filter by the user's RAM from preflight, pick one recommended default plus 1–2 alternatives, and explain the choice in one sentence ("small enough to train on your 16GB Mac, strong at short classification answers"). The user may override with any MLX-compatible Hugging Face model — but warn about the constraints listed in the catalog (no GGUF/Ollama-only models, no gated models without a HF token, size ceiling by RAM).
-
-## Step 5: Show the plan
-
-Before anything heavy runs, show one short summary: model chosen, number of examples, estimated training time, disk needed, and the success target. Get a single "go ahead" — then run the rest without stopping for permission at each step.
-
-## Step 6: Baseline evaluation
-
-Before training, measure the un-tuned model on the held-out test set:
+## The dashboard in one minute
 
 ```bash
-python3 scripts/evaluate.py --model <base-model> --test-data <project>/data/mlx_format/test.jsonl \
-  --output <project>/results/baseline/results.json
+DASH="python3 <skill>/scripts/dashboard.py"   # always the skill's copy
+$DASH init    --project <proj> --task "sort emails by sentiment" --goal "90% accuracy"
+$DASH section --project <proj> --id samples --stage data --title "Sample training emails" --html-file /tmp/samples.html
+$DASH stage   --project <proj> --id training --status running   # done | skipped (--note why)
+$DASH log     --project <proj> --action "Installed mlx-lm 0.31" --detail "pip3 install mlx-lm" --category install
+$DASH results --project <proj> --open                            # builds baseline/results/try-it sections
 ```
 
-For classification/extraction this gives exact-match accuracy automatically. For open-ended generation, the script saves the model's outputs; grade a sample of ~20 yourself against the expected answers (be strict and consistent) and record the score in the results JSON under `"judge_accuracy"`.
+Every command re-renders the page. Stages: setup, data, model, baseline, training, results, export — shown as a clickable pipeline with done/running/skipped markers. "Files & disk" (annotated folder tree + disk usage + cleanup guidance) and "Activity log" tabs are generated automatically on every render. Scores are 0–1 fractions everywhere; the dashboard normalizes accidental percentages, but don't create them.
 
-Tell the user the baseline in plain terms: "Before training, the model gets it right about 6 times out of 10."
+## Workflow
 
-## Step 7: Train
+### 1. Preflight
 
-Pick hyperparameters yourself (never ask the user). Defaults that work:
+Run `scripts/preflight.py`. It checks Apple Silicon, RAM, disk (~15GB), Python 3.9+, mlx/mlx-lm, and Ollama, and prints a `PREFLIGHT_JSON` line — keep `ram_gb` (drives model choice) and `has_ollama` (drives the export step).
+
+- **Not Apple Silicon** → stop gracefully: explain the skill needs Apple's MLX framework, mention that PyTorch/cloud alternatives exist but aren't automated here. No workarounds.
+- Missing deps → create a venv inside the project folder, `pip3 install mlx mlx-lm huggingface_hub`. Log each install.
+
+Create the project folder (ask where; default `./slm-finetune-<task-name>/`) with `data/`, `adapters/`, `results/baseline/`, `results/final/`, `report/`. Then `dashboard.py init` with the task and goal, mark stage `setup` done, and tell the user where the dashboard lives.
+
+### 2. Interview
+
+Plain-English questions only (AskUserQuestion is fine here — these are questions, not review content):
+
+1. **What should the model learn to do?**
+2. **Do you have example data?** (file path, or no → 3b)
+3. **What does a perfect answer look like?** (label / short phrase / paragraph)
+4. **How good does it need to be?** ("right 9 of 10 times" → 90%)
+
+Infer the task type and design the prompt template yourself — see `references/data-formats.md`.
+
+### 3a. User has data
+
+Inspect their file, design the column→prompt mapping, then **show 2 example conversions in a dashboard section** (stage `data`) and confirm the mapping with the user. Then run `scripts/prepare_data.py` (converts CSV/JSON/JSONL → MLX format, dedupes, splits train/valid/test). Add a short data-summary section (counts, label balance) and mark stage `data` done.
+
+Quantity guidance (warn, don't block): classification 50+, generation/Q&A 200+. Too few or imbalanced → offer synthetic augmentation (3b).
+
+### 3b. User has no data (or not enough)
+
+Two options — present both: **synthetic generation** (you write the examples — follow `references/synthetic-data.md`) or **download from Hugging Face** (confirm the specific dataset first). For synthetic: write ~5 samples, render them into a dashboard section (stage `data`), tell the user to look at the dashboard, and only generate the full set after they approve the style. Never show the samples only inside a question widget.
+
+### 4. Choose the model
+
+Read `references/models.md`, filter the catalog by `ram_gb`, and build a comparison table **as a dashboard section** (stage `model`): model, size, download, best-for, rough training time — with your recommendation clearly marked and the one-sentence reason stated. Then ask via AskUserQuestion: recommended model first, 1–2 alternatives, **and always an explicit "I'll provide my own model (Hugging Face link or ID)" option**. Validate user-supplied models against the catalog's override rules (MLX-supported architecture, not GGUF/Ollama-only, not gated without a token, fits RAM); if it fails, explain why and offer the closest catalog model. Mark stage `model` done and pass the chosen model as `--model-label` on the next `results` call.
+
+### 5. Show the plan
+
+One short summary — model, examples, estimated time, disk, success target — as chat text plus a dashboard section. Get a single "go ahead"; then run the rest without step-by-step permission.
+
+### 6. Baseline evaluation
+
+```bash
+python3 scripts/evaluate.py --model <base-model> \
+  --test-data <proj>/data/mlx_format/test_pairs.jsonl \
+  --output <proj>/results/baseline/results.json
+```
+
+Exact-match accuracy for classification/extraction. For open-ended generation use `--no-score`, grade ~20 outputs yourself (strict, consistent), and add `"judge_accuracy"` — **as a 0–1 fraction** — to the script's JSON. Results files always come from `evaluate.py`; never hand-write them. Then `dashboard.py results` (builds the baseline section) and tell the user the score in plain terms.
+
+### 7. Train
+
+Pick hyperparameters yourself:
 
 | Setting | Default | Adjust when |
 |---|---|---|
 | LoRA layers | 16 | 8 for ≤1B models |
 | Batch size | 2 | 1 if RAM ≤ 8GB or model ≥ 3B |
 | Learning rate | 5e-5 | — |
-| Iterations | ~min(1000, examples × 60 / batch_size), floor 200 | more data → cap at 1000 |
+| Iterations | ~min(1000, examples × 60 / batch_size), floor 200 | — |
 
-Run training (from inside the project venv):
-
-```bash
-python3 -m mlx_lm lora --model <base-model> --train \
-  --data <project>/data/mlx_format \
-  --batch-size 2 --iters <N> --learning-rate 5e-5 \
-  --adapter-path <project>/adapters/<task-name> \
-  --steps-per-report 10 --steps-per-eval 100 --save-every 200
-```
-
-Run it in the background and monitor output. Watch for:
-- **Out of memory** → halve batch size, or drop to a smaller model from the catalog.
-- **Validation loss rising while training loss falls** → overfitting; stop and use the last good checkpoint, or reduce iterations.
-- Save a `training_metadata.json` in the adapter folder (model, iterations, examples, wall time, settings) — the report needs it.
-
-More failure modes: `references/troubleshooting.md`.
-
-## Step 8: Final evaluation
-
-Re-run `scripts/evaluate.py` with `--adapter-path <project>/adapters/<task-name>`, output to `results/final/results.json`. Compare against baseline and against the user's target.
-
-- **Target met** → Step 10.
-- **Target missed** → diagnose before retrying. Look at the actual wrong answers:
-  - Wrong answers scattered/random and dataset small → **data quantity**: offer synthetic augmentation (Step 3b) — generate more examples focused on the failing categories, merge, retrain once.
-  - Errors concentrated in one category → data imbalance: synthesize that category.
-  - Outputs malformed (rambling, wrong format) → prompt template issue: fix the template, rebuild data, retrain.
-  - Already near ceiling but short of goal → suggest a larger model from the catalog if RAM allows.
-  - Limit retraining to 2 attempts; after that, present honest results and options rather than looping.
-
-## Step 9: Export to Ollama
-
-Follow `references/ollama-export.md`: fuse the adapter into the base model with `mlx_lm fuse`, write a Modelfile, and `ollama create <task-name>`. If Ollama isn't installed, offer `brew install ollama` or skip the step gracefully. Verify with one test prompt through `ollama run`.
-
-## Step 10: The report (always do this)
-
-Generate the final HTML report:
+Always train through the wrapper (it streams progress, writes `training_metadata.json`, logs to the dashboard, detects OOM and rising validation loss):
 
 ```bash
-python3 scripts/report.py --project <project-folder> --open
+python3 scripts/train.py --model <base-model> --data <proj>/data/mlx_format \
+  --adapter-path <proj>/adapters/<task-name> --iters <N> --batch-size 2 \
+  --project <proj>
 ```
 
-The script builds `report/report.html` from `results/baseline/`, `results/final/`, and `training_metadata.json`. It is written for a non-AI audience: what was done (as a simple journey), before-vs-after scores with a visual bar comparison, sample predictions, how to use the model now (Ollama command, copy-pasteable), and where every file lives (clickable `file://` links). Pass extra context the script can't know via `--summary-json` (see the script's `--help`): task description in the user's own words, goal, whether the goal was met, synthetic-data notes.
+Run in the background, monitor, set stage `training` running → done. On OOM follow the wrapper's hint (batch 1 → smaller model). More failure modes: `references/troubleshooting.md`.
 
-Open it in the browser (or send it to the user) and close with a 3-sentence plain-English recap in chat.
+### 8. Final evaluation
+
+Re-run `evaluate.py` with `--adapter-path`, output to `results/final/results.json`. Write `summary.json` in the project root (plain-language fields the dashboard uses: `task_description`, `goal_description`, `goal_met`, `data_source`, `n_training_examples`, `synthetic_note`, `ollama_name`, `prompt_template`, `next_steps`) — then `dashboard.py results --open`.
+
+- **Target met** → step 9.
+- **Target missed** → diagnose from the actual wrong answers before retrying: scattered errors + small dataset → synthetic augmentation focused on failures; one bad category → synthesize that category; malformed outputs → fix the template and rebuild; near ceiling → suggest a larger catalog model. Max 2 retrains, then present honest results and options.
+
+### 9. Export to Ollama
+
+Consume the preflight signal — don't discover failure at export time:
+
+- **Ollama installed** → follow `references/ollama-export.md` (fuse → Modelfile → `ollama create` → verify with one templated prompt). Set `ollama_name` in summary.json, re-run `dashboard.py results` so the "Use your model" section (editable command + copy button) appears. Mark stage `export` done.
+- **Not installed** → offer `brew install ollama`; if declined, mark stage `export` skipped (`--note "Ollama not installed"`), and make sure the dashboard's try-it section still shows the `mlx_lm generate` fallback. This is a normal path, not an error — say so.
+
+### 10. Close out
+
+Final pass: confirm `summary.json` is complete, `dashboard.py results --open`, and give a 3-sentence plain-English recap in chat. The dashboard's Files & disk tab already explains every file, sizes, and how to reclaim space — point the user to it, especially if they ask about the ~GBs used. Offer (never do silently): clearing the Hugging Face model cache if they're done fine-tuning for now (`rm -rf ~/.cache/huggingface` — re-downloads if needed).

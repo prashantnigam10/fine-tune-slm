@@ -16,7 +16,7 @@ Born from the tutorial series [Small Language Models: The Future of Local AI](ht
 6. **Trains with LoRA** — minutes, not hours; entirely on-device, nothing uploaded anywhere
 7. **Evaluates against your goal** — and if the goal is missed, diagnoses why (data quantity? imbalance? template?) and offers a targeted fix
 8. **Exports to Ollama** — so `ollama run your-model` just works
-9. **Reports in plain language** — an HTML report with before/after scores, what changed, where every file lives, and how to use your model
+9. **Reports in plain language** — a single interactive HTML dashboard with before/after scores, what changed, a full activity log of everything the run did, every file explained with disk-cleanup guidance, and a ready-to-copy command to use your model
 
 ## Requirements
 
@@ -50,7 +50,7 @@ From the original email-sentiment project this skill is based on: SmolLM2-1.7B w
 ```
 skills/fine-tune-slm/    the skill itself (copy this folder into ~/.claude/skills/)
 ├── SKILL.md             the workflow Claude follows
-├── scripts/             deterministic steps: preflight, data prep, evaluation, report
+├── scripts/             deterministic steps: preflight, data prep, training, evaluation, dashboard
 └── references/          model catalog, data formats, synthetic data, Ollama export, troubleshooting
 ```
 

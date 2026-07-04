@@ -9,6 +9,11 @@ sample by judgment and add "judge_accuracy" to the JSON.
 
 Writes results JSON: accuracy, per-example predictions, and (for label-like
 tasks) a per-label breakdown.
+
+IMPORTANT: accuracy (and any judge_accuracy added by hand afterwards) is ALWAYS
+a 0-1 fraction (0.62 = 62%), never a percentage. The results files under
+results/baseline/ and results/final/ must be produced by this script - never
+hand-written - so the dashboard's math stays consistent.
 """
 
 import argparse
