@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Internal working notes (roadmap, fix lists) — not published
+notes/
+
+# Local experiment output — skill runs should never happen inside this repo,
+# but just in case
+slm-finetune-*/
+adapters/
+results/
