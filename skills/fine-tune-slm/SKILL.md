@@ -32,10 +32,11 @@ Every command re-renders the page. Stages: setup, data, model, baseline, trainin
 
 ### 1. Preflight
 
-Run `scripts/preflight.py`. It checks Apple Silicon, RAM, disk (~15GB), Python 3.9+, mlx/mlx-lm, and Ollama, and prints a `PREFLIGHT_JSON` line — keep `ram_gb` (drives model choice) and `has_ollama` (drives the export step).
+Run `scripts/preflight.py`. It checks Apple Silicon, RAM, disk (~15GB), Python 3.9+, the shared environment, and Ollama, and prints a `PREFLIGHT_JSON` line — keep `ram_gb` (drives model choice), `has_ollama` (drives the export step), and `shared_env_ok`.
 
 - **Not Apple Silicon** → stop gracefully: explain the skill needs Apple's MLX framework, mention that PyTorch/cloud alternatives exist but aren't automated here. No workarounds.
-- Missing deps → create a venv inside the project folder, `pip3 install mlx mlx-lm huggingface_hub`. Log each install.
+- **Dependencies live in ONE shared environment** at `~/.slm-finetune/venv`, reused by every project. If `shared_env_ok` is false, create/repair it exactly as preflight's warning says — installing **only from the skill's pinned `requirements.txt`** (never loose package names; unpinned installs pull a transformers newer than mlx-lm supports and break at model-load time). Log the install. When `shared_env_ok` is true, say so and skip installation entirely — this is the normal case after the first run.
+- Run every Python step (evaluate, train, fuse, dataset downloads) with `~/.slm-finetune/venv/bin/python`. Do not create per-project venvs. If an extra package is ever genuinely needed, install the pinned version into the shared env and log it.
 
 Create the project folder (ask where; default `./slm-finetune-<task-name>/`) with `data/`, `adapters/`, `results/baseline/`, `results/final/`, `report/`. Then `dashboard.py init` with the task and goal, mark stage `setup` done, and tell the user where the dashboard lives.
 
@@ -47,6 +48,8 @@ Plain-English questions only (AskUserQuestion is fine here — these are questio
 2. **Do you have example data?** (file path, or no → 3b)
 3. **What does a perfect answer look like?** (label / short phrase / paragraph)
 4. **How good does it need to be?** ("right 9 of 10 times" → 90%)
+
+**Question 4 is not optional.** The goal is what the final evaluation is judged against — without it, the goal check and the retrain loop silently never fire. If the user has no opinion, propose a default out loud (classification/extraction: 90%; generation: "clearly better than the un-trained model on a judged sample") and get their yes. Record it in `dashboard.py init --goal` and later in `summary.json` — a run must never reach training with no recorded goal.
 
 Infer the task type and design the prompt template yourself — see `references/data-formats.md`.
 
@@ -64,6 +67,8 @@ Two options — present both: **synthetic generation** (you write the examples �
 
 Read `references/models.md`, filter the catalog by `ram_gb`, and build a comparison table **as a dashboard section** (stage `model`): model, size, download, best-for, rough training time — with your recommendation clearly marked and the one-sentence reason stated. Then ask via AskUserQuestion: recommended model first, 1–2 alternatives, **and always an explicit "I'll provide my own model (Hugging Face link or ID)" option**. Validate user-supplied models against the catalog's override rules (MLX-supported architecture, not GGUF/Ollama-only, not gated without a token, fits RAM); if it fails, explain why and offer the closest catalog model. Mark stage `model` done and pass the chosen model as `--model-label` on the next `results` call.
 
+Once chosen, run `preflight.py --check-model <hf-id>` **before saying anything about downloads**. The HF cache is shared across all projects, so a model used before is already on disk. Tell the user what's actually true — "already on disk (2.9 GB), reusing it" vs "will download ~3 GB, one time" — and log it (`--category download` or `file`). Long silent periods at first model use are usually *loading into memory*, not downloading; say so.
+
 ### 5. Show the plan
 
 One short summary — model, examples, estimated time, disk, success target — as chat text plus a dashboard section. Get a single "go ahead"; then run the rest without step-by-step permission.
@@ -71,7 +76,7 @@ One short summary — model, examples, estimated time, disk, success target — 
 ### 6. Baseline evaluation
 
 ```bash
-python3 scripts/evaluate.py --model <base-model> \
+~/.slm-finetune/venv/bin/python scripts/evaluate.py --model <base-model> \
   --test-data <proj>/data/mlx_format/test_pairs.jsonl \
   --output <proj>/results/baseline/results.json
 ```
@@ -92,7 +97,8 @@ Pick hyperparameters yourself:
 Always train through the wrapper (it streams progress, writes `training_metadata.json`, logs to the dashboard, detects OOM and rising validation loss):
 
 ```bash
-python3 scripts/train.py --model <base-model> --data <proj>/data/mlx_format \
+~/.slm-finetune/venv/bin/python scripts/train.py --model <base-model> \
+  --data <proj>/data/mlx_format \
   --adapter-path <proj>/adapters/<task-name> --iters <N> --batch-size 2 \
   --project <proj>
 ```
@@ -105,6 +111,7 @@ Re-run `evaluate.py` with `--adapter-path`, output to `results/final/results.jso
 
 - **Target met** → step 9.
 - **Target missed** → diagnose from the actual wrong answers before retrying: scattered errors + small dataset → synthetic augmentation focused on failures; one bad category → synthesize that category; malformed outputs → fix the template and rebuild; near ceiling → suggest a larger catalog model. Max 2 retrains, then present honest results and options.
+- **No goal recorded** (shouldn't happen — see step 2): treat a final score under baseline + 10 points as an automatic "target missed" and diagnose; a missing goal must never mean "never retrain". The dashboard will show a visible warning on the results section until a goal exists.
 
 ### 9. Export to Ollama
 

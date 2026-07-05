@@ -1,6 +1,8 @@
 # Troubleshooting
 
 ## During setup
+- **mlx-lm errors at model load about tokenizers/transformers (AttributeError, ImportError, "requires transformers<X")** — version mismatch: an unpinned install pulled a transformers newer than mlx-lm supports. This is exactly why the shared env is built ONLY from the skill's pinned `requirements.txt`. Recovery: `~/.slm-finetune/venv/bin/pip install -r <skill>/requirements.txt --force-reinstall`. Never "fix" it by installing loose latest versions — that recreates the problem on the next package release.
+- **Something installed `datasets`/another package and training broke afterwards** — same cause: the new package bumped transformers. Same recovery as above; the pinned file already includes `datasets`.
 - **`pip3 install mlx` fails / "not a supported wheel"** — almost always an Intel Mac or Rosetta Python. Verify `python3 -c "import platform; print(platform.machine())"` prints `arm64`. If `x86_64`, the Python itself is Intel — install an arm64 Python (e.g., `brew install python@3.12`).
 - **Model download fails with 401/403** — gated model. Either the user accepts the license on Hugging Face + `huggingface-cli login`, or switch to a non-gated catalog model / `mlx-community` mirror.
 - **Download extremely slow / stalls** — resume is automatic; also check disk space, HF downloads fail confusingly when disk fills.

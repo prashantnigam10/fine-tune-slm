@@ -58,7 +58,7 @@ PATH_DESCRIPTIONS = {
     "results/baseline": "How the model did BEFORE training",
     "results/final": "How the model did AFTER training",
     "report": "This dashboard and its data",
-    "venv": "The project's private Python tools (safe to delete; recreated on demand)",
+    "venv": "Python tools for this project (older runs only - newer runs share one set at ~/.slm-finetune)",
     "summary.json": "Plain-language facts about this run, used by this dashboard",
 }
 
@@ -205,6 +205,7 @@ def build_files_section(proj):
     home = Path.home()
     hf = home / ".cache" / "huggingface"
     ol = home / ".ollama" / "models"
+    shared = home / ".slm-finetune"
     proj_size = dir_size(proj)
     locs = [
         (str(proj), proj_size, "This project: your data, the trained adapter, results, and this report.",
@@ -215,6 +216,9 @@ def build_files_section(proj):
         (str(ol), dir_size(ol) if ol.exists() else 0,
          "Ollama's own copies of models, including your custom one. This is what actually runs.",
          "Remove individual models with <code>ollama rm &lt;name&gt;</code>. Keep your custom one while you use it."),
+        (str(shared), dir_size(shared) if shared.exists() else 0,
+         "The Python training tools, shared by all your fine-tuning projects (installed once).",
+         f"Safe to delete when you're done fine-tuning for good: <code>rm -rf {esc(str(shared))}</code>"),
     ]
     disk = "".join(
         f'<div class="dloc"><div><b>{esc(Path(p).name if p != str(proj) else "Project folder")}</b> '
@@ -305,6 +309,18 @@ def build_results_sections(proj, meta, summary):
         goal, goal_met = summary.get("goal_description", ""), summary.get("goal_met")
         badge = ('<span class="badge ok">Goal achieved</span>' if goal_met is True
                  else '<span class="badge warn">Goal not fully reached</span>' if goal_met is False else "")
+        goal_warn = ""
+        if not goal or goal_met is None:
+            # A run without a recorded goal can't judge success or trigger retraining -
+            # surface that loudly instead of letting it pass silently.
+            print("WARNING: summary.json is missing goal_description/goal_met - the run has "
+                  "no success target. Agree on a target with the user and re-evaluate "
+                  "against it (see SKILL.md step 2/8).", file=sys.stderr)
+            goal_warn = ('<div style="background:#fff3cd;border:1px solid #ffe08a;'
+                         'border-radius:8px;padding:10px 14px;margin:10px 0">'
+                         '<b>No success target was set for this run.</b> The scores below are '
+                         'informational, but nothing checked them against a goal - ask for a '
+                         'target and re-evaluate if results matter.</div>')
         impr = (f'<p><b>Improvement: {(f - b) * 100:+.0f} percentage points</b></p>'
                 if b is not None and f is not None else "")
         # sample predictions fixed by training
@@ -324,7 +340,8 @@ def build_results_sections(proj, meta, summary):
                 samples_html = ("<h3>Examples of what changed</h3>"
                                 f"<details open><summary>Show examples</summary>{samples_html}</details>")
         save_section(proj, {"id": "results", "stage": "results", "title": "Results", "html":
-            f'<p><b>The task:</b> {esc(meta.get("task", ""))}'
+            goal_warn
+            + f'<p><b>The task:</b> {esc(meta.get("task", ""))}'
             + (f'<br><b>Your goal:</b> {esc(goal)} {badge}' if goal else f' {badge}')
             + "</p>" + bar("Before training", b, "#adb5bd") + bar("After training", f, "#2f9e44")
             + impr + samples_html})

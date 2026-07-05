@@ -7,7 +7,7 @@ Goal: the user types `ollama run <task-name>` and their fine-tuned model answers
 LoRA training produces a small adapter file; Ollama needs a full standalone model. Merge them:
 
 ```bash
-python3 -m mlx_lm fuse \
+~/.slm-finetune/venv/bin/python -m mlx_lm fuse \
   --model <base-model-hf-id> \
   --adapter-path <project>/adapters/<task-name> \
   --save-path <project>/models/<task-name>-fused

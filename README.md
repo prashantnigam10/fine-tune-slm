@@ -18,6 +18,23 @@ Born from the tutorial series [Small Language Models: The Future of Local AI](ht
 8. **Exports to Ollama** — so `ollama run your-model` just works
 9. **Reports in plain language** — a single interactive HTML dashboard with before/after scores, what changed, a full activity log of everything the run did, every file explained with disk-cleanup guidance, and a ready-to-copy command to use your model
 
+## What can I build with this?
+
+Everyday things people fine-tune a local SLM for — no AI background needed for any of them:
+
+- **Email triage** — sort your inbox by urgency, trained on ~50–100 of your own labeled emails
+- **Expense categorizer** — cryptic bank-statement lines → budget categories; exactly the data you *don't* want in the cloud
+- **Meeting-notes action extractor** — paste raw notes, get back the action items with owners
+- **Personal style rewriter** — blunt drafts → your own polite email voice, trained on pairs from your Sent folder
+- **Support-ticket router** — billing / bug / how-to / feature-request, with priority
+- **Recipe dietary tagger** — vegetarian, gluten-free, contains nuts — no data needed; the skill generates it
+- **Journal mood tagger** — tag entries by mood and theme; deeply personal data that stays on your Mac
+- **Log-severity classifier** — a local triage model for your app's log lines
+- **Homework question sorter** — bucket practice questions by subject and difficulty for worksheets
+- **Customer-review digester** — sentiment plus a one-phrase topic ("negative — shipping delay")
+
+The privacy-heavy ones (expenses, journal, email) are where local fine-tuning shines: the model, the training data, and every prediction stay on your machine.
+
 ## Requirements
 
 - Mac with Apple Silicon (M1 or newer) — the skill uses Apple's [MLX](https://github.com/ml-explore/mlx) framework

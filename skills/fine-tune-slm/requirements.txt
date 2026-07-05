@@ -1,0 +1,14 @@
+# Pinned, tested-together set for fine-tune-slm.
+# Validated 2026-07-05 on Apple M3 Pro / Python 3.13: pip-resolvable as a fresh
+# install, imports clean, tokenizer load verified, and a full fine-tune completed
+# on this exact combination during skill validation.
+# Why pins: mlx-lm lags behind transformers' newest releases; unpinned installs
+# recurrently break at model-load time. Refresh all pins together, then re-verify
+# (fresh venv install + tokenizer load) before shipping a new skill version.
+mlx==0.31.2
+mlx-lm==0.31.3
+transformers==5.0.0
+tokenizers==0.22.2
+datasets==5.0.0
+huggingface_hub==1.22.0
+numpy==2.5.1

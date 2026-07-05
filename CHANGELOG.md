@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0] - 2026-07-05
+
+Second fix pass, from validation runs of v0.2.0.
+
+- New: one shared Python environment (~/.slm-finetune/venv) reused by all
+  projects — no more per-run reinstalls; preflight checks it and prints exact
+  setup instructions on first run
+- New: pinned requirements.txt (mlx / mlx-lm / transformers / datasets) — a
+  tested-together set that ends the recurring mlx-lm↔transformers version
+  mismatch; troubleshooting entry added with the recovery command
+- New: `preflight.py --check-model <hf-id>` reports whether a model is already
+  in the local cache, so runs say "already on disk, reusing" instead of wrongly
+  announcing downloads
+- Fixed: a run could reach training with no accuracy goal recorded, silently
+  disabling the goal check and retrain loop — the goal is now required before
+  training (with a proposed default if the user has none), the dashboard shows
+  a visible warning when it's missing, and a weak improvement triggers
+  diagnosis even without a goal
+- README: added "What can I build with this?" with ten everyday use cases
+
 ## [0.2.0] - 2026-07-04
 
 Fix pass from the first real end-to-end test run.
