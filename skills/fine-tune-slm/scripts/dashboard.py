@@ -38,7 +38,7 @@ STAGES = [
     ("baseline", "Before training"),
     ("training", "Training"),
     ("results", "Results"),
-    ("export", "Ollama export"),
+    ("export", "Local Ollama"),
 ]
 STAGE_IDS = [s for s, _ in STAGES]
 UTIL_TABS = [("files", "Files & disk"), ("activity", "Activity log")]
@@ -375,6 +375,8 @@ def build_results_sections(proj, meta, summary):
         if ollama_name:
             tid = "tryitcmd"
             tryit += (
+                '<p class="muted">Your model is installed in the Ollama app on this Mac only — '
+                'it is not published or uploaded anywhere.</p>'
                 '<p>Type your own text below — the command updates as you type. '
                 'Copy it and paste into Terminal.</p>'
                 f'<textarea id="tryinput" rows="3" placeholder="Paste the text you want the model to handle...">'

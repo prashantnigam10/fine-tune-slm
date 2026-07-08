@@ -5,14 +5,14 @@ description: Fine-tune a small language model (SLM) locally on Apple Silicon usi
 
 # Fine-Tune a Small Language Model Locally (Apple Silicon)
 
-Guide a user with general tech literacy — but **no AI engineering background** — through fine-tuning a small language model on their own Mac. You (Claude) are the AI engineer; the user only answers plain-English questions about their problem. Never ask the user to pick hyperparameters, LoRA ranks, or learning rates. Translate their answers into config yourself.
+Guide a user with general tech literacy — but **no AI engineering background** — through fine-tuning a small language model on their own Mac. You, the AI agent running this skill, are the AI engineer; the user only answers plain-English questions about their problem. Never ask the user to pick hyperparameters, LoRA ranks, or learning rates. Translate their answers into config yourself.
 
 **Golden rules for this skill:**
 - Talk to the user in plain language. Briefly define any term you must use.
 - Everything runs locally. Never upload their data anywhere.
 - Fail gracefully: check hardware first; if something can't work, say why and what would work instead.
 - **The dashboard is the single artifact.** One HTML file per run (`report/dashboard.html`, managed by `scripts/dashboard.py`) collects everything: plans, data samples, model options, results, files, and an activity log. Add to it at every step; tell the user to keep it open and refresh.
-- **Anything the user must review goes in the dashboard first, then ask.** Never put review content (sample data, converted examples, model tables) inside AskUserQuestion options or previews — users often can't see those. Sequence: add dashboard section → open/point to it → ask the plain question.
+- **Anything the user must review goes in the dashboard first, then ask.** Never put review content (sample data, converted examples, model tables) inside your agent's question-tool options or previews (e.g. AskUserQuestion in Claude Code) — users often can't see those. Sequence: add dashboard section → open/point to it → ask the plain question.
 - **Log as you go.** Every install, download, file created, or long command runs through `dashboard.py log ...` the moment it happens — the user may have auto-approve on and deserves a full record of what touched their machine. `train.py` logs itself; everything else is your habit.
 
 ## The dashboard in one minute
@@ -42,7 +42,7 @@ Create the project folder (ask where; default `./slm-finetune-<task-name>/`) wit
 
 ### 2. Interview
 
-Plain-English questions only (AskUserQuestion is fine here — these are questions, not review content):
+Plain-English questions only (your agent's question tool — e.g. AskUserQuestion in Claude Code — is fine here; these are questions, not review content):
 
 1. **What should the model learn to do?**
 2. **Do you have example data?** (file path, or no → 3b)
@@ -65,7 +65,7 @@ Two options — present both: **synthetic generation** (you write the examples �
 
 ### 4. Choose the model
 
-Read `references/models.md`, filter the catalog by `ram_gb`, and build a comparison table **as a dashboard section** (stage `model`): model, size, download, best-for, rough training time — with your recommendation clearly marked and the one-sentence reason stated. Then ask via AskUserQuestion: recommended model first, 1–2 alternatives, **and always an explicit "I'll provide my own model (Hugging Face link or ID)" option**. Validate user-supplied models against the catalog's override rules (MLX-supported architecture, not GGUF/Ollama-only, not gated without a token, fits RAM); if it fails, explain why and offer the closest catalog model. Mark stage `model` done and pass the chosen model as `--model-label` on the next `results` call.
+Read `references/models.md`, filter the catalog by `ram_gb`, and build a comparison table **as a dashboard section** (stage `model`): model, size, download, best-for, rough training time — with your recommendation clearly marked and the one-sentence reason stated. Then ask via the question tool: recommended model first, 1–2 alternatives, **and always an explicit "I'll provide my own model (Hugging Face link or ID)" option**. Validate user-supplied models against the catalog's override rules (MLX-supported architecture, not GGUF/Ollama-only, not gated without a token, fits RAM); if it fails, explain why and offer the closest catalog model. Mark stage `model` done and pass the chosen model as `--model-label` on the next `results` call.
 
 Once chosen, run `preflight.py --check-model <hf-id>` **before saying anything about downloads**. The HF cache is shared across all projects, so a model used before is already on disk. Tell the user what's actually true — "already on disk (2.9 GB), reusing it" vs "will download ~3 GB, one time" — and log it (`--category download` or `file`). Long silent periods at first model use are usually *loading into memory*, not downloading; say so.
 
@@ -113,9 +113,11 @@ Re-run `evaluate.py` with `--adapter-path`, output to `results/final/results.jso
 - **Target missed** → diagnose from the actual wrong answers before retrying: scattered errors + small dataset → synthetic augmentation focused on failures; one bad category → synthesize that category; malformed outputs → fix the template and rebuild; near ceiling → suggest a larger catalog model. Max 2 retrains, then present honest results and options.
 - **No goal recorded** (shouldn't happen — see step 2): treat a final score under baseline + 10 points as an automatic "target missed" and diagnose; a missing goal must never mean "never retrain". The dashboard will show a visible warning on the results section until a goal exists.
 
-### 9. Export to Ollama
+### 9. Install into local Ollama
 
-Consume the preflight signal — don't discover failure at export time:
+**Wording matters here:** this step installs the model into the Ollama app *on this Mac* — nothing is uploaded, published, or shared. Users hear "export to Ollama" and worry it means ollama.com / public. Say explicitly, in chat and in the dashboard, something like: "installing it into your local Ollama so you can run it like any other local model — it stays on this Mac only." (Publishing to ollama.com is a separate, deliberate act this skill never performs.)
+
+Consume the preflight signal — don't discover failure at install time:
 
 - **Ollama installed** → follow `references/ollama-export.md` (fuse → Modelfile → `ollama create` → verify with one templated prompt). Set `ollama_name` in summary.json, re-run `dashboard.py results` so the "Use your model" section (editable command + copy button) appears. Mark stage `export` done.
 - **Not installed** → offer `brew install ollama`; if declined, mark stage `export` skipped (`--note "Ollama not installed"`), and make sure the dashboard's try-it section still shows the `mlx_lm generate` fallback. This is a normal path, not an error — say so.

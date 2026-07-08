@@ -1,6 +1,8 @@
-# Exporting to Ollama
+# Installing into local Ollama
 
 Goal: the user types `ollama run <task-name>` and their fine-tuned model answers. Two steps: fuse the LoRA adapter into the base model, then register with Ollama.
+
+**This is entirely local.** `ollama create` registers the model in the Ollama app's library on this Mac (`~/.ollama/models`) — it does not upload anything, and the model is not visible to anyone else. Publishing to ollama.com requires a separate explicit `ollama push` with an account, which this skill never does. Make sure the user understands this distinction — "export to Ollama" sounds like publishing, and it isn't.
 
 ## 1. Fuse the adapter
 
