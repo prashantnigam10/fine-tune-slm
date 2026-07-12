@@ -48,8 +48,10 @@ that no evaluation ever produced. The fix is mechanical guardrails, not more ins
 
 - **Smarter checkpoint selection** - compare final validation loss to the best seen, and
   prefer the earlier checkpoint when training overshot into overfitting
-- **Disk efficiency** - optionally delete the fused model after Ollama imports its own copy
-  (~3.4 GB back); skip fusing entirely when Ollama isn't installed
+- ~~**Disk efficiency** - delete the fused model after Ollama imports its own copy
+  (~3.4 GB back); skip fusing entirely when Ollama isn't installed~~ **Done (v0.4.0)**:
+  the fused model is now created only for `ollama create` and removed after the import
+  is verified; without Ollama, nothing is fused and the adapter+base command is the way to run
 - **Baseline-in-Ollama convenience** - optional export of the untrained base model for
   informal before/after comparison (with clear caveats: cross-engine inference differs
   slightly; `results/baseline/results.json` stays authoritative)

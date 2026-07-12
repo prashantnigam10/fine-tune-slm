@@ -53,7 +53,8 @@ PATH_DESCRIPTIONS = {
     "data/mlx_format/test_pairs.jsonl": "The same test examples, kept in question/answer form for scoring",
     "data/synthetic_data.jsonl": "Practice examples that were generated for you",
     "adapters": "The small 'lesson' file training produced (the base model itself was never modified)",
-    "models": "Full standalone copies of your customized model",
+    "models": "Temporary staging area for the Ollama import (the fused copy is removed "
+              "once Ollama has its own)",
     "results": "Test scores and every individual prediction",
     "results/baseline": "How the model did BEFORE training",
     "results/final": "How the model did AFTER training",
@@ -286,9 +287,9 @@ def build_results_sections(proj, meta, summary):
     """Create/refresh baseline + results (+ try-it) sections from results files."""
     baseline = load_json(proj / "results/baseline/results.json")
     final = load_json(proj / "results/final/results.json")
-    tmeta = {}
+    tmeta, adapter_dir = {}, None
     for m in sorted(proj.glob("adapters/*/training_metadata.json")):
-        tmeta = load_json(m)
+        tmeta, adapter_dir = load_json(m), m.parent
 
     b, f = score_of(baseline), score_of(final)
     n_train = summary.get("n_training_examples") or tmeta.get("training_examples") \
@@ -384,11 +385,18 @@ def build_results_sections(proj, meta, summary):
                 f'<pre id="{tid}"></pre>'
                 f'<button onclick="copyCmd(\'{tid}\')">Copy command</button>'
                 f'<script>window.tryitConfig={json.dumps({"name": ollama_name, "template": template})};</script>')
+        # fallback command: prefer adapter+base (fused model is temporary — deleted
+        # after a successful Ollama import, never created when Ollama is absent)
         fused = sorted((proj / "models").glob("*-fused")) if (proj / "models").exists() else []
-        if fused:
+        if tmeta.get("model_name") and adapter_dir:
             tryit += ('<details><summary class="muted">Without Ollama (advanced)</summary>'
-                      f'<pre>venv/bin/python -m mlx_lm generate --model {esc(str(fused[-1]))} '
-                      '--prompt "..."</pre></details>')
+                      f'<pre>~/.slm-finetune/venv/bin/python -m mlx_lm generate '
+                      f'--model {esc(tmeta["model_name"])} '
+                      f'--adapter-path {esc(str(adapter_dir))} --prompt "..."</pre></details>')
+        elif fused:
+            tryit += ('<details><summary class="muted">Without Ollama (advanced)</summary>'
+                      f'<pre>~/.slm-finetune/venv/bin/python -m mlx_lm generate '
+                      f'--model {esc(str(fused[-1]))} --prompt "..."</pre></details>')
         if tryit:
             save_section(proj, {"id": "tryit", "stage": "export", "title": "Use your model",
                                 "html": tryit})

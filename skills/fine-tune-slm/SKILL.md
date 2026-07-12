@@ -119,8 +119,8 @@ Re-run `evaluate.py` with `--adapter-path`, output to `results/final/results.jso
 
 Consume the preflight signal — don't discover failure at install time:
 
-- **Ollama installed** → follow `references/ollama-export.md` (fuse → Modelfile → `ollama create` → verify with one templated prompt). Set `ollama_name` in summary.json, re-run `dashboard.py results` so the "Use your model" section (editable command + copy button) appears. Mark stage `export` done.
-- **Not installed** → offer `brew install ollama`; if declined, mark stage `export` skipped (`--note "Ollama not installed"`), and make sure the dashboard's try-it section still shows the `mlx_lm generate` fallback. This is a normal path, not an error — say so.
+- **Ollama installed** → follow `references/ollama-export.md` (fuse → Modelfile → `ollama create` → verify with one templated prompt → **delete the fused folder and log the reclaimed space** — Ollama keeps its own copy, and the adapter + cached base can regenerate the fused model anytime). Set `ollama_name` in summary.json, re-run `dashboard.py results` so the "Use your model" section (editable command + copy button) appears. Mark stage `export` done.
+- **Not installed** → offer `brew install ollama`; if declined, **do not fuse at all** (the fused model exists only to feed `ollama create`), mark stage `export` skipped (`--note "Ollama not installed"`), and make sure the dashboard's try-it section still shows the adapter+base `mlx_lm generate --adapter-path` fallback. This is a normal path, not an error — say so.
 
 ### 10. Close out
 

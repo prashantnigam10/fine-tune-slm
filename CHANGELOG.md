@@ -1,5 +1,15 @@
 # Changelog
 
+## [Unreleased]
+
+- Changed: fused-model lifecycle (#12) — the fused model is created only when
+  Ollama is installed (it exists solely to feed `ollama create`), and is deleted
+  once the Ollama import is verified, reclaiming ~3+ GB per run; Ollama keeps its
+  own copy and the adapter + cached base model can regenerate the fused copy on
+  demand. Without Ollama, nothing is fused and the dashboard's "Without Ollama"
+  command now uses `mlx_lm generate --adapter-path` (adapter + base) instead of
+  pointing at a fused folder that may not exist
+
 ## [0.3.0] - 2026-07-05
 
 Second fix pass, from validation runs of v0.2.0.
