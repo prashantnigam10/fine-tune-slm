@@ -61,8 +61,10 @@ that no evaluation ever produced. The fix is mechanical guardrails, not more ins
 - **Windows & Linux backend** - PyTorch + PEFT/QLoRA implementation of `train.py` /
   `evaluate.py` / fuse; the interview, data prep, and dashboard layers are already
   platform-neutral. *The single highest-impact contribution.*
-- **Publishing** - an opt-in, deliberate flow for sharing a tested model to ollama.com or
-  Hugging Face (kept separate from training: test first, publish later)
+- ~~**Publishing** - an opt-in, deliberate flow for sharing a tested model to ollama.com or
+  Hugging Face (kept separate from training: test first, publish later)~~ **Done (v0.4.0)**:
+  shipped as a separate companion skill, `skills/publish-slm` - consent-gated, test-first,
+  never handles credentials, and only cites measured numbers
 - **Distribution** - Claude Code plugin/marketplace packaging; validated install paths and
   testing for more agents (Cursor, Codex); per-agent question-tool phrasing
 

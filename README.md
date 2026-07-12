@@ -134,6 +134,8 @@ Training uses [LoRA](https://arxiv.org/abs/2106.09685) - the base model stays fr
 
 **Does "install into Ollama" publish my model?** No -`ollama create` only registers the model with the Ollama app **on your Mac**, like adding a song to a local music library. Publishing to ollama.com is a completely separate action (`ollama push` with an account) that this skill never performs.
 
+**Can I share my model once I'm happy with it?** Yes - that's what the companion **[publish-slm](skills/publish-slm)** skill is for (install it the same way, from `skills/publish-slm`). It's deliberately a separate skill: test your model thoroughly first, then say "publish my model" and it walks you through ollama.com (public) or Hugging Face (private-first, ~30 MB adapter-only by default). Every upload needs your explicit yes, it never touches your credentials, and its model cards only cite measured scores.
+
 **How much data do I need?** ~50+ examples for classification, ~200+ for generation/style. Less than that, and the skill offers to generate more (you approve the style first).
 
 **Can it fine-tune any model?** Any open-weight Hugging Face model with an MLX-supported architecture - which covers the mainstream small models. GGUF/Ollama-only models can't be trained (that's an inference format); the skill explains this and offers alternatives.
@@ -154,7 +156,7 @@ honestly in [LESSONS.md](LESSONS.md), and the actionable backlog is in
 from a real fine-tuning run, and several are labeled `good first issue`. Highlights:
 
 - **Evaluation integrity** - mechanical guarantees that every number a run reports is traceable to a real evaluation
-- Publishing trained models to ollama.com / Hugging Face (deliberately separate from training - test first, publish later)
+- ~~Publishing trained models to ollama.com / Hugging Face~~ ✅ shipped as the separate [publish-slm](skills/publish-slm) skill (test first, publish later)
 - One-command install via Claude Code plugin marketplace; validated install paths and testing for more agents (Cursor, Codex)
 - Cross-platform training backend (PyTorch/PEFT) for Linux and Windows - *the most impactful contribution; see the pinned issue*
 

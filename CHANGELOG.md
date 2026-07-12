@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+- New: `publish-slm` companion skill (#15) — a separate, independent skill
+  (skills/publish-slm) that publishes a *tested* fine-tune-slm project to
+  ollama.com (public) or Hugging Face (private-first, adapter-only by default).
+  Deliberately kept out of the training flow: test first, publish later. Every
+  upload is consent-gated with a fresh confirmation naming what/where/visibility;
+  credentials are never handled (the user logs in themselves); model-card numbers
+  must come from scripts/check_project.py, which reads only evaluate.py-produced
+  results files and warns loudly on regressions, unmet goals, and private
+  training data. Includes base-license guidance (Llama naming rule, Gemma terms
+  flow-down) and fuse-on-demand when the local Ollama copy is missing (per #12)
 - Changed: fused-model lifecycle (#12) — the fused model is created only when
   Ollama is installed (it exists solely to feed `ollama create`), and is deleted
   once the Ollama import is verified, reclaiming ~3+ GB per run; Ollama keeps its
