@@ -66,6 +66,23 @@ Every run produces one interactive dashboard. These screenshots are from a real 
 
 ## Quick start
 
+**Option 1 - npx (any agent, one command):**
+
+```bash
+npx fine-tune-slm
+```
+
+Detects the agents on your machine and copies both skills (fine-tune-slm + publish-slm) into their skills directories. Claude Code is validated; Codex/Cursor locations are best-effort (`--agent`, `--dir`, `--list`, `--force` flags available).
+
+**Option 2 - Claude Code plugin marketplace:**
+
+```
+/plugin marketplace add prashantnigam10/fine-tune-slm
+/plugin install fine-tune-slm@fine-tune-slm
+```
+
+**Option 3 - manual copy:**
+
 ```bash
 git clone https://github.com/prashantnigam10/fine-tune-slm.git
 cp -R fine-tune-slm/skills/fine-tune-slm ~/.claude/skills/

@@ -1,0 +1,33 @@
+{
+  "name": "fine-tune-slm",
+  "owner": {
+    "name": "Prashant Nigam",
+    "url": "https://github.com/prashantnigam10"
+  },
+  "metadata": {
+    "description": "Local SLM fine-tuning for people who are not AI engineers - train on your Mac, keep your data private, publish only when you choose to.",
+    "version": "0.4.0"
+  },
+  "plugins": [
+    {
+      "name": "fine-tune-slm",
+      "source": "./",
+      "description": "Fine-tune a small language model locally on Apple Silicon via a plain-English interview (MLX + LoRA, Ollama export, HTML dashboard), plus the publish-slm companion skill for sharing a tested model to ollama.com or Hugging Face.",
+      "author": {
+        "name": "Prashant Nigam",
+        "url": "https://github.com/prashantnigam10"
+      },
+      "license": "MIT",
+      "keywords": [
+        "fine-tuning",
+        "slm",
+        "mlx",
+        "lora",
+        "ollama",
+        "local-ai",
+        "apple-silicon"
+      ],
+      "category": "ai"
+    }
+  ]
+}

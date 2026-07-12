@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- New: distribution (#17) — the repo is now a Claude Code plugin + marketplace
+  (`/plugin marketplace add prashantnigam10/fine-tune-slm`, manifest validated
+  with `claude plugin validate`) and an npm package with an npx installer
+  (`npx fine-tune-slm`) that detects installed agents and copies both skills
+  into their skills directories (Claude Code validated; Codex/Cursor locations
+  best-effort experimental; Antigravity gets registry instructions). The
+  cross-platform (PyTorch) training backend deliberately remains a backlog item
 - New: `publish-slm` companion skill (#15) — a separate, independent skill
   (skills/publish-slm) that publishes a *tested* fine-tune-slm project to
   ollama.com (public) or Hugging Face (private-first, adapter-only by default).

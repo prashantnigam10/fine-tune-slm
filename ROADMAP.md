@@ -65,8 +65,11 @@ that no evaluation ever produced. The fix is mechanical guardrails, not more ins
   Hugging Face (kept separate from training: test first, publish later)~~ **Done (v0.4.0)**:
   shipped as a separate companion skill, `skills/publish-slm` - consent-gated, test-first,
   never handles credentials, and only cites measured numbers
-- **Distribution** - Claude Code plugin/marketplace packaging; validated install paths and
-  testing for more agents (Cursor, Codex); per-agent question-tool phrasing
+- **Distribution** - **partially done (v0.4.0)**: Claude Code plugin + marketplace manifests
+  (`.claude-plugin/`, validated with `claude plugin validate`) and an npm/npx installer
+  (`npx fine-tune-slm`) that detects agents and copies both skills. Still open: publishing
+  the npm package, real-world validation of the Codex/Cursor install paths, and per-agent
+  question-tool phrasing
 
 ## Contributing
 

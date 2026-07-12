@@ -1,0 +1,43 @@
+{
+  "name": "fine-tune-slm",
+  "version": "0.4.0",
+  "description": "Installer for the fine-tune-slm Agent Skills: fine-tune a small language model locally on Apple Silicon (MLX + LoRA) via a plain-English interview, plus a companion skill to publish tested models. Copies the skills into your AI coding agent's skills directory (Claude Code validated; Codex/Cursor experimental; Antigravity manual).",
+  "bin": {
+    "fine-tune-slm": "bin/install.js"
+  },
+  "files": [
+    "bin",
+    "skills",
+    "!**/__pycache__",
+    "!**/*.pyc",
+    "!**/.DS_Store",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prashantnigam10/fine-tune-slm.git"
+  },
+  "homepage": "https://github.com/prashantnigam10/fine-tune-slm#readme",
+  "bugs": "https://github.com/prashantnigam10/fine-tune-slm/issues",
+  "keywords": [
+    "agent-skills",
+    "claude-code",
+    "fine-tuning",
+    "slm",
+    "mlx",
+    "lora",
+    "ollama",
+    "local-ai",
+    "apple-silicon"
+  ],
+  "author": "Prashant Nigam (https://github.com/prashantnigam10)",
+  "license": "MIT"
+}

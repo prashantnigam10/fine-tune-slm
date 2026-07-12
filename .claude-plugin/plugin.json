@@ -1,0 +1,21 @@
+{
+  "name": "fine-tune-slm",
+  "version": "0.4.0",
+  "description": "Fine-tune a small language model locally on Apple Silicon (MLX + LoRA) through a plain-English interview - hardware check, data prep, synthetic data, training, evaluation, Ollama export, and an HTML dashboard. Includes the publish-slm companion skill for deliberately sharing a tested model to ollama.com or Hugging Face.",
+  "author": {
+    "name": "Prashant Nigam",
+    "url": "https://github.com/prashantnigam10"
+  },
+  "homepage": "https://github.com/prashantnigam10/fine-tune-slm",
+  "repository": "https://github.com/prashantnigam10/fine-tune-slm",
+  "license": "MIT",
+  "keywords": [
+    "fine-tuning",
+    "slm",
+    "mlx",
+    "lora",
+    "ollama",
+    "local-ai",
+    "apple-silicon"
+  ]
+}
